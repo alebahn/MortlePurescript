@@ -10,6 +10,7 @@ You can edit this file as you like.
   , "effect"
   , "either"
   , "psci-support"
+  , "signal"
   , "web-dom"
   , "web-html"
   ]

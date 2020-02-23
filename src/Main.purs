@@ -40,9 +40,10 @@ main :: Effect Unit
 main = launchAff_ do
   waitForWindowLoad
   loadFont
-  maybeCanvasElement <- liftEffect $ getCanvasElementById "gameCanvas"
-  case maybeCanvasElement of
-    Nothing -> do
-      liftEffect $ log "Failed to Load game canvas"
-    Just canvasElement -> do
-      Game.start canvasElement
+  liftEffect do
+    maybeCanvasElement <- getCanvasElementById "gameCanvas"
+    case maybeCanvasElement of
+      Nothing -> do
+        log "Failed to Load game canvas"
+      Just canvasElement -> do
+        Game.start canvasElement
