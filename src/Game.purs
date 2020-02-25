@@ -2,7 +2,7 @@ module Game where
 
 import Prelude
 
-import Data.Array (mapWithIndex, (!!))
+import Data.Array (mapWithIndex, (!!), length)
 import Data.Int (fromNumber, toNumber)
 import Data.Maybe (Maybe(..))
 import Effect (Effect, foreachE)
@@ -268,6 +268,23 @@ getInputSignal = do
 angleDelta :: Number
 angleDelta = pi / 32.0
 
+advanceToNextLevel :: GameModel -> GameModel
+advanceToNextLevel game = game {
+  nextLevel = game.currentLevel + 1,
+  aimAngle = 0.0,
+  currentX = 2.0,
+  currentY = 58.0,
+  nextState = if game.nextLevel >= length levels
+    then Win
+    else Aim
+}
+
+gravity :: Number
+gravity = 0.025
+
+airResistance :: Number
+airResistance = 0.9756
+
 update :: Input -> GameModel -> GameModel
 update Frame game = --handle animation frame
   let
@@ -286,7 +303,25 @@ update Frame game = --handle animation frame
         currentLevel = game.nextLevel
         }
     in
-      game'
+      case game'.currentState of
+        Launch -> if (game.currentX >= 90.0 && game.currentY >= 55.0)
+          then advanceToNextLevel game'
+          else if checkCollision game game.currentX (game.currentY + 1.0)
+            then game' {currentX = round game.currentX, currentY = round (game.currentY - 1.0), nextState = Aim}
+            else let
+                game'' = if (checkCollision game game.currentX (game.currentY - 1.0)) && game.velocityY < 0.0
+                  then game' {velocityX = 0.0, velocityY = 0.0}
+                  else if ((checkCollision game (game.currentX - 1.0) game.currentY) && game.velocityX < 0.0 ) ||
+                      ((checkCollision game (game.currentX + 1.0) game.currentY) && game.velocityX > 0.0)
+                    then game' {velocityX = -game'.velocityX}
+                    else game'
+              in
+                game'' {
+                  currentX = game''.currentX + game''.velocityX,
+                  currentY = game''.currentY + game''.velocityY,
+                  velocityY = (game''.velocityY + gravity) * airResistance
+                }
+        _ -> game'
 update input game = --handle keypress
   let
     game' = game {
@@ -358,8 +393,13 @@ checkCollision game x y = case (do
   let x' = round x
   let y' = round y
 
-  rowInt <- fromNumber $ floor (x' / 5.0)
-  colInt <- fromNumber $ floor (y' / 5.0)
+  _ <- if x' < 0.0 then Nothing else pure false
+  _ <- if x' >= 95.0 then Nothing else pure false
+  _ <- if y' < 0.0 then Nothing else pure false
+  _ <- if y' >= 60.0 then Nothing else pure false
+
+  rowInt <- fromNumber $ floor (y' / 5.0)
+  colInt <- fromNumber $ floor (x' / 5.0)
   row <-levelData !! rowInt
   cell <- row !! colInt
   pure cell) of
@@ -432,6 +472,10 @@ display game | game.paintScreen = do
       let endX = round (game.currentX + aimLength * sin(game.aimAngle))
       let endY = round (game.currentY - aimLength * cos(game.aimAngle))
       drawLine game game.currentX game.currentY endX endY
+    Launch -> do
+      clearScreen game
+      let rectangle = {x: round game.currentX, y: round game.currentY, width: 1.0, height: 1.0}
+      fillRect game.canvasContext rectangle
     _ -> pure unit
 display game = pure unit  --ignore if no paint flag
 
