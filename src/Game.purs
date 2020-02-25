@@ -274,7 +274,7 @@ advanceToNextLevel game = game {
   aimAngle = 0.0,
   currentX = 2.0,
   currentY = 58.0,
-  nextState = if game.nextLevel >= length levels
+  nextState = if game.nextLevel + 1 >= length levels
     then Win
     else Aim
 }
@@ -292,6 +292,7 @@ update Frame game = --handle animation frame
       then case game.nextState of
         Menu -> true
         Aim -> game.currentLevel /= game.nextLevel
+        Win -> true
         _ -> false
       else false
   in
@@ -338,6 +339,7 @@ update input game = --handle keypress
         KeyLeft -> game' { aimAngle = game.aimAngle - angleDelta }
         KeyRight -> game' { aimAngle = game.aimAngle + angleDelta }
         _ -> game' {nextState = Launch, velocityX = sin game.aimAngle, velocityY = -cos game.aimAngle}
+      Win -> makeGame game.canvasElement game.canvasContext game.width game.height
       _ -> game'
 
 drawCell :: GameModel -> Int -> Int -> Boolean -> Effect Unit
@@ -377,6 +379,22 @@ level :: GameModel -> Effect Unit
 level game = do
   clearScreen game
   drawLevel game
+  saveToBackground game
+  clearScreen game
+
+drawWin :: GameModel -> Effect Unit
+drawWin game = do
+  let context = game.canvasContext
+  fillText context "You Win!" 16.0 12.0
+  fillText context "Press any" 4.0 24.0
+  fillText context "key to" 4.0 32.0
+  fillText context "return to" 4.0 40.0
+  fillText context "menu" 4.0 48.0
+
+win :: GameModel -> Effect Unit
+win game = do
+  clearScreen game
+  drawWin game
   saveToBackground game
   clearScreen game
 
@@ -457,6 +475,7 @@ display game | game.paintScreen = do
     then case game.currentState of
       Menu -> menu game
       Aim -> level game
+      Win -> win game
       _ -> pure unit
     else pure unit
   case game.currentState of
