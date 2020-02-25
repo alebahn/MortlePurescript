@@ -8,7 +8,7 @@ import Data.Maybe (Maybe(..))
 import Effect (Effect, foreachE)
 import Effect.Class.Console (log)
 import Graphics.Canvas (CanvasElement, Context2D, canvasToDataURL, clearRect, fillRect, fillText, getCanvasDimensions, getContext2D, setFillStyle, setFont, strokeRect)
-import Math (abs, floor, round, sin, cos)
+import Math (abs, floor, round, sin, cos, pi)
 import Signal (Signal, runSignal, (~>), filter, merge, foldp)
 import Signal.DOM (animationFrame, keyPressed)
 
@@ -182,7 +182,9 @@ type GameModel = {
   nextLevel :: Int,
   currentX :: Number,
   currentY :: Number,
-  aimAngle :: Number
+  aimAngle :: Number,
+  velocityX :: Number,
+  velocityY :: Number
 }
 
 data Input = KeyLeft | KeyRight | KeyUp | KeyDown | KeyOther | Frame
@@ -227,7 +229,9 @@ makeGame canvasElement context width height = {
   nextLevel: -1,
   currentX: 2.0,
   currentY: 58.0,
-  aimAngle: 0.0
+  aimAngle: 0.0,
+  velocityX: 0.0,
+  velocityY: 0.0
 }
 
 getInputFromKeycode :: Int -> Input
@@ -261,6 +265,9 @@ getInputSignal = do
   signalFrame <- getAnimationFrameInput
   pure $ merge signalLeft $ merge signalUp $ merge signalRight $ merge signalDown $ merge signalEnter $ merge signalSpace signalFrame
 
+angleDelta :: Number
+angleDelta = pi / 32.0
+
 update :: Input -> GameModel -> GameModel
 update Frame game = --handle animation frame
   let
@@ -292,6 +299,10 @@ update input game = --handle keypress
         KeyDown -> game' { menuOption = Continue }
         KeyLeft -> game' -- do nothing
         _ -> game' {nextLevel = 0, nextState = Aim}
+      Aim -> case input of
+        KeyLeft -> game' { aimAngle = game.aimAngle - angleDelta }
+        KeyRight -> game' { aimAngle = game.aimAngle + angleDelta }
+        _ -> game' {nextState = Launch, velocityX = sin game.aimAngle, velocityY = -cos game.aimAngle}
       _ -> game'
 
 drawCell :: GameModel -> Int -> Int -> Boolean -> Effect Unit
@@ -387,16 +398,18 @@ drawLineCore game x0 y0 x1 y1 dx dy sx sy err = do
     else
       let
         e2 = 2.0 * err
-      in
-        if e2 > -dy
-        then
-          drawLineCore game (x0+sx) y0 x1 y1 dx dy sx sy (err-dy)
-        else
-          if e2 < dx
+        x0err = if e2 > -dy
           then
-            drawLineCore game x0 (y0+sy) x1 y1 dx dy sx sy (err+dx)
+            {x0: x0+sx, err: err-dy}
           else
-            drawLineCore game x0 y0 x1 y1 dx dy sx sy err
+            {x0: x0, err:err}
+        y0err = (if e2 < dx
+          then
+            {y0: y0+sy, err: x0err.err+dx}
+          else
+            {y0: y0, err: x0err.err})
+      in
+        drawLineCore game x0err.x0 y0err.y0 x1 y1 dx dy sx sy y0err.err
 
 display :: GameModel -> Effect Unit
 display game | game.paintScreen = do
