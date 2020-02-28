@@ -194,7 +194,7 @@ type GameModel = {
 data Input = KeyLeft | KeyRight | KeyUp | KeyDown | KeyOther | Frame
 
 levelCookieName :: String
-levelCookieName = "level"
+levelCookieName = "CurrentLevel"
 
 loadContinueLevel :: Effect Int
 loadContinueLevel = do
