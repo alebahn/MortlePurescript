@@ -456,10 +456,10 @@ checkCollision game x y = case (do
   let x' = round x
   let y' = round y
 
-  _ <- if x' < 0.0 then Nothing else pure false
-  _ <- if x' >= 95.0 then Nothing else pure false
-  _ <- if y' < 0.0 then Nothing else pure false
-  _ <- if y' >= 60.0 then Nothing else pure false
+  if x' < 0.0 then Nothing else pure unit
+  if x' >= 95.0 then Nothing else pure unit
+  if y' < 0.0 then Nothing else pure unit
+  if y' >= 60.0 then Nothing else pure unit
 
   rowInt <- fromNumber $ floor (y' / 5.0)
   colInt <- fromNumber $ floor (x' / 5.0)
