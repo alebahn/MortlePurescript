@@ -2772,7 +2772,7 @@ var PS = {};
           };
       };
   };
-  var levelCookieName = "level";
+  var levelCookieName = "CurrentLevel";
   var loadContinueLevel = function __do() {
       var maybeCookie = Browser_Cookie.getCookie(levelCookieName)();
       var v = Control_Bind.bind(Data_Maybe.bindMaybe)(maybeCookie)(function (v1) {
@@ -3014,33 +3014,33 @@ var PS = {};
               var v = Control_Bind.bind(Data_Maybe.bindMaybe)(Data_Array.index(levels)(game.currentLevel))(function (levelData) {
                   var x$prime = $$Math.round(x);
                   var y$prime = $$Math.round(y);
-                  return Control_Bind.bind(Data_Maybe.bindMaybe)((function () {
+                  return Control_Bind.discard(Control_Bind.discardUnit)(Data_Maybe.bindMaybe)((function () {
                       var $33 = x$prime < 0.0;
                       if ($33) {
                           return Data_Maybe.Nothing.value;
                       };
-                      return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(false);
+                      return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(Data_Unit.unit);
                   })())(function () {
-                      return Control_Bind.bind(Data_Maybe.bindMaybe)((function () {
+                      return Control_Bind.discard(Control_Bind.discardUnit)(Data_Maybe.bindMaybe)((function () {
                           var $34 = x$prime >= 95.0;
                           if ($34) {
                               return Data_Maybe.Nothing.value;
                           };
-                          return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(false);
+                          return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(Data_Unit.unit);
                       })())(function () {
-                          return Control_Bind.bind(Data_Maybe.bindMaybe)((function () {
+                          return Control_Bind.discard(Control_Bind.discardUnit)(Data_Maybe.bindMaybe)((function () {
                               var $35 = y$prime < 0.0;
                               if ($35) {
                                   return Data_Maybe.Nothing.value;
                               };
-                              return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(false);
+                              return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(Data_Unit.unit);
                           })())(function () {
-                              return Control_Bind.bind(Data_Maybe.bindMaybe)((function () {
+                              return Control_Bind.discard(Control_Bind.discardUnit)(Data_Maybe.bindMaybe)((function () {
                                   var $36 = y$prime >= 60.0;
                                   if ($36) {
                                       return Data_Maybe.Nothing.value;
                                   };
-                                  return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(false);
+                                  return Control_Applicative.pure(Data_Maybe.applicativeMaybe)(Data_Unit.unit);
                               })())(function () {
                                   return Control_Bind.bind(Data_Maybe.bindMaybe)(Data_Int.fromNumber($$Math.floor(y$prime / 5.0)))(function (rowInt) {
                                       return Control_Bind.bind(Data_Maybe.bindMaybe)(Data_Int.fromNumber($$Math.floor(x$prime / 5.0)))(function (colInt) {
