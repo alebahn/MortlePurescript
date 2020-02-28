@@ -2,8 +2,11 @@ module Game where
 
 import Prelude
 
+import Browser.Cookie (getCookie, setCookie)
+import Browser.Cookies.Data (Cookie(..), CookieOpts(..), SetCookie(..))
 import Data.Array (mapWithIndex, (!!), length)
-import Data.Int (fromNumber, toNumber)
+import Data.Int (fromNumber, toNumber, fromString, toStringAs, decimal)
+import Data.JSDate (now, fromTime, getTime)
 import Data.Maybe (Maybe(..))
 import Effect (Effect, foreachE)
 import Effect.Class.Console (log)
@@ -184,10 +187,45 @@ type GameModel = {
   currentY :: Number,
   aimAngle :: Number,
   velocityX :: Number,
-  velocityY :: Number
+  velocityY :: Number,
+  continueLevel :: Int
 }
 
 data Input = KeyLeft | KeyRight | KeyUp | KeyDown | KeyOther | Frame
+
+levelCookieName :: String
+levelCookieName = "level"
+
+loadContinueLevel :: Effect Int
+loadContinueLevel = do
+  maybeCookie <- getCookie levelCookieName
+  case (do
+    Cookie cookie <- maybeCookie
+    levelInt <- fromString cookie.value
+    pure levelInt
+    ) of
+    Nothing -> pure 0
+    Just levelInt -> pure levelInt
+
+saveContinueLevel :: Int -> Effect Unit
+saveContinueLevel continueLevel = do
+  let cookie = Cookie {
+    key: levelCookieName,
+    value: toStringAs decimal continueLevel
+  }
+  now <- now
+  let expire = fromTime (99999.0 + getTime now)
+  let opts = CookieOpts {
+    domain: Nothing,
+    expires: Just expire,
+    httpOnly: false,
+    path: Nothing,
+    maxAge: Nothing,
+    samesite: Nothing,
+    secure: false
+  }
+  setCookie $ SetCookie {cookie: cookie, opts: Just opts}
+  pure unit
 
 clearScreen :: GameModel -> Effect Unit
 clearScreen game = do
@@ -214,8 +252,8 @@ menu game = do
   saveToBackground game
   clearScreen game
 
-makeGame :: CanvasElement -> Context2D -> Number -> Number -> GameModel
-makeGame canvasElement context width height = {
+makeGame :: CanvasElement -> Context2D -> Number -> Number -> Int -> GameModel
+makeGame canvasElement context width height continueLevel = {
   canvasElement: canvasElement,
   canvasContext: context,
   width: width,
@@ -227,6 +265,7 @@ makeGame canvasElement context width height = {
   paintScreen: false,
   currentLevel: -1,
   nextLevel: -1,
+  continueLevel: continueLevel,
   currentX: 2.0,
   currentY: 58.0,
   aimAngle: 0.0,
@@ -285,6 +324,11 @@ gravity = 0.025
 airResistance :: Number
 airResistance = 0.9756
 
+getStartLevel :: GameModel -> Int
+getStartLevel game = case game.menuOption of
+  NewGame -> 0
+  Continue -> game.continueLevel
+
 update :: Input -> GameModel -> GameModel
 update Frame game = --handle animation frame
   let
@@ -334,12 +378,12 @@ update input game = --handle keypress
         KeyUp -> game' { menuOption = NewGame }
         KeyDown -> game' { menuOption = Continue }
         KeyLeft -> game' -- do nothing
-        _ -> game' {nextLevel = 0, nextState = Aim}
+        _ -> game' {nextLevel = getStartLevel game', nextState = Aim}
       Aim -> case input of
         KeyLeft -> game' { aimAngle = game.aimAngle - angleDelta }
         KeyRight -> game' { aimAngle = game.aimAngle + angleDelta }
         _ -> game' {nextState = Launch, velocityX = sin game.aimAngle, velocityY = -cos game.aimAngle}
-      Win -> makeGame game.canvasElement game.canvasContext game.width game.height
+      Win -> makeGame game.canvasElement game.canvasContext game.width game.height game.continueLevel
       _ -> game'
 
 drawCell :: GameModel -> Int -> Int -> Boolean -> Effect Unit
@@ -377,6 +421,7 @@ drawLevel game = do
 
 level :: GameModel -> Effect Unit
 level game = do
+  saveContinueLevel game.currentLevel
   clearScreen game
   drawLevel game
   saveToBackground game
@@ -508,5 +553,6 @@ start :: CanvasElement -> Effect Unit
 start canvasElement = do
   context <- getContext2D canvasElement
   dimensions <- getCanvasDimensions canvasElement
-  let game = makeGame canvasElement context dimensions.width dimensions.height
+  continueLevel <- loadContinueLevel
+  let game = makeGame canvasElement context dimensions.width dimensions.height continueLevel
   mainLoop game

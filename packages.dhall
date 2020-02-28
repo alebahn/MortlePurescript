@@ -123,6 +123,21 @@ let upstream =
 
 let overrides = {=}
 
-let additions = {=}
+let additions =
+  { purescript-browser-cookies =
+       { dependencies =
+           [ "effect"
+           , "console"
+           , "maybe"
+           , "foldable-traversable"
+           , "prelude"
+           , "js-date"
+           , "strings"]
+       , repo =
+           "git://github.com/vilu/purescript-browser-cookies.git"
+       , version =
+           "master"
+       }
+  }
 
 in  upstream // overrides // additions
